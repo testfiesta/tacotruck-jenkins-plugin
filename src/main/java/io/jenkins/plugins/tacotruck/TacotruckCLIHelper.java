@@ -1,0 +1,175 @@
+package io.jenkins.plugins.tacotruck;
+
+import hudson.FilePath;
+import hudson.Launcher;
+import hudson.Proc;
+import hudson.model.TaskListener;
+import hudson.util.ArgumentListBuilder;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Logger;
+import org.jenkinsci.plugins.plaincredentials.StringCredentials;
+
+public class TacotruckCLIHelper {
+
+    private static final Logger LOGGER = Logger.getLogger(TacotruckCLIHelper.class.getName());
+
+    protected static CLIResult executeCLI(
+            String[] command, Launcher launcher, TaskListener listener, FilePath workspace) {
+        try {
+            ArgumentListBuilder args = new ArgumentListBuilder();
+            for (String arg : command) {
+                args.add(arg);
+            }
+
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            Launcher.ProcStarter procStarter = launcher.new ProcStarter();
+            procStarter = procStarter.cmds(args).stdout(outputStream);
+
+            if (workspace != null) {
+                procStarter = procStarter.pwd(workspace);
+            }
+
+            Proc proc = procStarter.start();
+            int exitCode = proc.join();
+            String output = outputStream.toString(StandardCharsets.UTF_8).trim();
+
+            return new CLIResult(exitCode, output, exitCode == 0, null);
+
+        } catch (IOException e) {
+            return new CLIResult(-1, "", false, e.getMessage());
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return new CLIResult(-1, "", false, "Process interrupted");
+        }
+    }
+
+    protected static boolean isTacotruckCliAvailable(Launcher launcher, TaskListener listener, FilePath workspace) {
+        CLIResult result = executeCLI(new String[] {"tacotruck", "--version"}, launcher, listener, workspace);
+
+        if (result.isSuccess()) {
+            LOGGER.info("✓ TacoTruck CLI is available: " + result.getOutput());
+            return true;
+        } else {
+            if (result.getErrorMessage() != null) {
+                LOGGER.info("✗ TacoTruck CLI not found: " + result.getErrorMessage());
+                LOGGER.info("Please ensure TacoTruck is installed via npm and available in PATH");
+            } else {
+                LOGGER.info("✗ TacoTruck CLI check failed with exit code: " + result.getExitCode());
+            }
+            return false;
+        }
+    }
+
+    protected static String getTacotruckCliVersion(Launcher launcher, TaskListener listener, FilePath workspace) {
+        CLIResult result = executeCLI(new String[] {"tacotruck", "--version"}, launcher, listener, workspace);
+        return result.isSuccess() ? result.getOutput() : null;
+    }
+
+    protected static String[] buildSubmitCommand(
+            String provider,
+            String resultsPath,
+            String projectKey,
+            String apiToken,
+            String handle,
+            String runName,
+            String baseUrl) {
+        List<String> cmd = new ArrayList<>();
+
+        cmd.add("npx");
+        cmd.add("@testfiesta/tacotruck");
+        cmd.add(provider);
+        cmd.add("run:submit");
+
+        cmd.add("--token");
+        cmd.add(apiToken);
+        cmd.add("--data");
+        cmd.add(resultsPath);
+        cmd.add("--organization");
+        cmd.add(handle);
+        cmd.add("--name");
+        cmd.add(runName);
+        cmd.add("--project-key");
+        cmd.add(projectKey);
+
+        // Base URL is not yet supported by TacoTruck CLI
+        if (baseUrl != null && !baseUrl.trim().isEmpty()) {
+            LOGGER.info("Base URL provided but not yet supported by TacoTruck CLI: " + baseUrl);
+        }
+
+        return cmd.toArray(new String[0]);
+    }
+
+    protected static boolean submitResults(
+            String provider,
+            String resultsPath,
+            String projectKey,
+            String apiToken,
+            String handle,
+            String runName,
+            String baseUrl,
+            Launcher launcher,
+            TaskListener listener,
+            FilePath workspace) {
+
+        listener.getLogger().println("Submitting test results to TacoTruck...");
+
+        String[] command = buildSubmitCommand(provider, resultsPath, projectKey, apiToken, handle, runName, baseUrl);
+
+        StringBuilder logCmd = new StringBuilder();
+        for (int i = 0; i < command.length; i++) {
+            if (i > 0) logCmd.append(" ");
+            // Hide the token value for security
+            if ("--token".equals(command[i]) && i + 1 < command.length) {
+                logCmd.append("--token ***");
+                i++; // Skip the actual token value
+            } else {
+                logCmd.append(command[i]);
+            }
+        }
+        listener.getLogger().println("Executing: " + logCmd.toString());
+
+        CLIResult result = executeCLI(command, launcher, listener, workspace);
+
+        return result.isSuccess();
+    }
+
+    protected static String getApiToken(String credentialsId) {
+        if (credentialsId == null || credentialsId.trim().isEmpty()) {
+            return null;
+        }
+
+        StringCredentials credentials = CredentialsHelper.lookupApiTokenCredentials(credentialsId);
+        if (credentials != null) {
+            return credentials.getSecret().getPlainText();
+        }
+
+        LOGGER.severe("Could not find API token credentials with ID: " + credentialsId);
+        return null;
+    }
+
+    protected static boolean submitResultsWithCredentials(
+            String provider,
+            String resultsPath,
+            String projectKey,
+            String credentialsId,
+            String handle,
+            String runName,
+            String baseUrl,
+            Launcher launcher,
+            TaskListener listener,
+            FilePath workspace) {
+
+        String apiToken = getApiToken(credentialsId);
+        if (apiToken == null) {
+            LOGGER.severe("✗ Failed to retrieve API token from credentials: " + credentialsId);
+            return false;
+        }
+
+        return submitResults(
+                provider, resultsPath, projectKey, apiToken, handle, runName, baseUrl, launcher, listener, workspace);
+    }
+}

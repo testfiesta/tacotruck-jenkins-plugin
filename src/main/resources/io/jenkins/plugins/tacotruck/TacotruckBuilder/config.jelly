@@ -16,11 +16,19 @@
         <f:textbox />
     </f:entry>
 
- <f:entry title="Credentials" field="credentialsId" description="Select the credentials">
+    <f:entry title="${%Handle}" field="handle">
+        <f:textbox />
+    </f:entry>
+
+ <f:entry title="${%Credentials}" field="credentialsId" description="Select the credentials">
         <c:select />
     </f:entry>
 
-<f:entry title="Project" field="project">
+<f:entry title="${%Project}" field="project">
+  <f:textbox />
+ </f:entry>
+
+<f:entry title="${%ResultsPath}" field="resultsPath">
   <f:textbox />
  </f:entry>
 

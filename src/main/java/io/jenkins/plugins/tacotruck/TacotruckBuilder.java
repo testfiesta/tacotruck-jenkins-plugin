@@ -1,7 +1,5 @@
 package io.jenkins.plugins.tacotruck;
 
-import static io.jenkins.plugins.tacotruck.Messages.*;
-
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
@@ -26,17 +24,28 @@ public class TacotruckBuilder extends Builder implements SimpleBuildStep {
 
     private final String runName;
     private final String apiUrl;
-    private String project;
-    private String credentialsId;
-    private String provider;
+    private final String project;
+    private final String handle;
+    private final String credentialsId;
+    private final String provider;
+    private final String resultsPath;
 
     @DataBoundConstructor
-    public TacotruckBuilder(String runName, String apiUrl, String provider, String project, String credentialsId) {
+    public TacotruckBuilder(
+            String runName,
+            String apiUrl,
+            String provider,
+            String handle,
+            String project,
+            String credentialsId,
+            String resultsPath) {
         this.runName = runName;
         this.apiUrl = apiUrl;
         this.provider = provider;
+        this.handle = handle;
         this.project = project;
         this.credentialsId = credentialsId;
+        this.resultsPath = resultsPath;
     }
 
     public String getRunName() {
@@ -51,6 +60,10 @@ public class TacotruckBuilder extends Builder implements SimpleBuildStep {
         return project;
     }
 
+    public String getHandle() {
+        return handle;
+    }
+
     public String getProvider() {
         return provider;
     }
@@ -59,30 +72,95 @@ public class TacotruckBuilder extends Builder implements SimpleBuildStep {
         return credentialsId;
     }
 
+    public String getResultsPath() {
+        return resultsPath;
+    }
+
     @Override
     public void perform(Run<?, ?> run, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener)
             throws InterruptedException, IOException {
-        listener.getLogger().println(this.getRunName());
+        String version = TacotruckCLIHelper.getTacotruckCliVersion(launcher, listener, workspace);
+        if (version == null) {
+            throw new InterruptedException(
+                    "Tacotruck CLI version not found. You can install it using npm install -g @testfiesta/tacotruck");
+        }
+        listener.getLogger().println(version);
+        listener.getLogger().println("Starting test result submission for run: " + this.getRunName());
+
+        boolean success = TacotruckCLIHelper.submitResultsWithCredentials(
+                this.getProvider(),
+                this.getResultsPath(),
+                this.getProject(),
+                this.getCredentialsId(),
+                this.getHandle(),
+                this.getRunName(),
+                this.getApiUrl(),
+                launcher,
+                listener,
+                workspace);
+
+        if (!success) {
+            throw new IOException("Failed to submit test results to TacoTruck");
+        }
+
+        listener.getLogger().println("✓ Test results successfully submitted to TacoTruck");
     }
 
     @Symbol("tacotruck")
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
-        public FormValidation doCheckName(@QueryParameter String value) throws IOException, ServletException {
-            if (value.length() == 0) return FormValidation.error(TacotruckBuilder_DescriptorImpl_errors_missingName());
-            if (value.length() < 4) return FormValidation.warning(TacotruckBuilder_DescriptorImpl_warnings_tooShort());
-
+        public FormValidation doCheckRunName(@QueryParameter String value) throws IOException, ServletException {
+            if (value == null || value.trim().isEmpty()) {
+                return FormValidation.error("Run name is required");
+            }
+            if (value.trim().length() < 3) {
+                return FormValidation.warning("Run name should be at least 3 characters long");
+            }
             return FormValidation.ok();
         }
 
         public FormValidation doCheckApiUrl(@QueryParameter String value) throws IOException, ServletException {
+            if (value == null || value.trim().isEmpty()) {
+                return FormValidation.error("API URL is required");
+            }
+            if (!value.startsWith("http://") && !value.startsWith("https://")) {
+                return FormValidation.error("API URL must start with http:// or https://");
+            }
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckProvider(@QueryParameter String value) {
+            if (value == null || value.trim().isEmpty()) {
+                return FormValidation.error("Provider is required");
+            }
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckHandle(@QueryParameter String value) {
+            if (value == null || value.trim().isEmpty()) {
+                return FormValidation.error("Organization handle is required");
+            }
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckProject(@QueryParameter String value) {
+            if (value == null || value.trim().isEmpty()) {
+                return FormValidation.error("Project is required");
+            }
+            return FormValidation.ok();
+        }
+
+        public FormValidation doCheckResultsPath(@QueryParameter String value) {
+            if (value == null || value.trim().isEmpty()) {
+                return FormValidation.error("Results path is required");
+            }
             return FormValidation.ok();
         }
 
         public FormValidation doCheckCredentialsId(@QueryParameter String value) {
-            if (value == null || value.isEmpty()) {
-                return FormValidation.error("Please select valid credentials");
+            if (value == null || value.trim().isEmpty()) {
+                return FormValidation.error("Credentials are required - please select valid credentials");
             }
             return FormValidation.ok();
         }
