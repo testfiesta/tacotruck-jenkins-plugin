@@ -42,10 +42,18 @@ pipeline {
     agent any
     stages {
         stage('TacoTruck Integration') {
+            environment {
+                TESTFIESTA_CREDENTIALS_ID = credentials('YOUR_CREDENTIALS_ID')
+            }
             steps {
                 tacotruck(
-                    runName: 'My TacoTruck Run',
-                    apiUrl: 'https://api.testfiesta.com'
+                 provider: 'testfiesta',
+                 runName: 'My TacoTruck Run',
+                 apiUrl: 'https://staging.api.testfiesta.com',
+                 handle: 'TestHandle',
+                 project: 'testProjectKey',
+                 credentialsId: TESTFIESTA_CREDENTIALS_ID,
+                 resultsPath: './test-results.xml'
                 )
             }
         }
