@@ -3,7 +3,7 @@ package io.jenkins.plugins.tacotruck;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.Proc;
+import hudson.Launcher.ProcStarter;
 import hudson.model.TaskListener;
 import hudson.util.ArgumentListBuilder;
 import java.io.ByteArrayOutputStream;
@@ -32,19 +32,15 @@ public class TacotruckCLIHelper {
             }
 
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            Launcher.ProcStarter procStarter = launcher.new ProcStarter();
-            procStarter = procStarter.cmds(args).stdout(outputStream);
 
-            if (workspace != null) {
-                procStarter = procStarter.pwd(workspace);
-            }
+            ProcStarter ps = launcher.decorateByEnv(envVars)
+                    .launch()
+                    .pwd(workspace)
+                    .cmds(args)
+                    .envs(envVars)
+                    .stdout(outputStream);
 
-            if (envVars != null) {
-                procStarter = procStarter.envs(envVars);
-            }
-
-            Proc proc = procStarter.start();
-            int exitCode = proc.join();
+            int exitCode = ps.join();
             String output = outputStream.toString(StandardCharsets.UTF_8).trim();
 
             return new CLIResult(exitCode, output, exitCode == 0, null);
@@ -81,11 +77,23 @@ public class TacotruckCLIHelper {
         return isTacotruckCliAvailable(launcher, listener, workspace, null);
     }
 
+    protected static String findNpxPath(Launcher launcher, TaskListener listener, FilePath workspace, EnvVars envVars) {
+        CLIResult result = executeCLI(new String[] {"which", "npx"}, launcher, listener, workspace, envVars);
+        return result.isSuccess() ? result.getOutput() : null;
+    }
+
     protected static String getTacotruckCliVersion(
             Launcher launcher, TaskListener listener, FilePath workspace, EnvVars envVars) {
 
+        CLIResult pwdResult = executeCLI(new String[] {"pwd"}, launcher, listener, workspace, envVars);
+        CLIResult npmWhichResult =
+                executeCLI(new String[] {"npm", "--version"}, launcher, listener, workspace, envVars);
+        listener.getLogger().printf("Current working directory: %s%n", pwdResult.getOutput());
+        listener.getLogger().printf("npm version: %s%n", npmWhichResult.getOutput());
+
+        String npxPath = findNpxPath(launcher, listener, workspace, envVars);
         CLIResult result = executeCLI(
-                new String[] {"npx", "@testfiesta/tacotruck", "--version"}, launcher, listener, workspace, envVars);
+                new String[] {npxPath, "@testfiesta/tacotruck", "--version"}, launcher, listener, workspace, envVars);
 
         return result.isSuccess() ? result.getOutput() : null;
     }
@@ -101,10 +109,11 @@ public class TacotruckCLIHelper {
             String apiToken,
             String handle,
             String runName,
-            String baseUrl) {
+            String baseUrl,
+            String npxPath) {
         List<String> cmd = new ArrayList<>();
 
-        cmd.add("npx");
+        cmd.add(npxPath);
         cmd.add("@testfiesta/tacotruck");
         cmd.add(provider);
         cmd.add("run:submit");
@@ -142,7 +151,9 @@ public class TacotruckCLIHelper {
 
         listener.getLogger().println("Submitting test results to TacoTruck...");
 
-        String[] command = buildSubmitCommand(provider, resultsPath, projectKey, apiToken, handle, runName, baseUrl);
+        String npxPath = findNpxPath(launcher, listener, workspace, null);
+        String[] command =
+                buildSubmitCommand(provider, resultsPath, projectKey, apiToken, handle, runName, baseUrl, npxPath);
 
         StringBuilder logCmd = new StringBuilder();
         for (int i = 0; i < command.length; i++) {
