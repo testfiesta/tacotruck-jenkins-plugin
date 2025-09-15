@@ -1,8 +1,9 @@
 package io.jenkins.plugins.tacotruck;
 
+import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
-import hudson.Proc;
+import hudson.Launcher.ProcStarter;
 import hudson.model.TaskListener;
 import hudson.util.ArgumentListBuilder;
 import java.io.ByteArrayOutputStream;
@@ -19,6 +20,11 @@ public class TacotruckCLIHelper {
 
     protected static CLIResult executeCLI(
             String[] command, Launcher launcher, TaskListener listener, FilePath workspace) {
+        return executeCLI(command, launcher, listener, workspace, null);
+    }
+
+    protected static CLIResult executeCLI(
+            String[] command, Launcher launcher, TaskListener listener, FilePath workspace, EnvVars envVars) {
         try {
             ArgumentListBuilder args = new ArgumentListBuilder();
             for (String arg : command) {
@@ -26,20 +32,21 @@ public class TacotruckCLIHelper {
             }
 
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            Launcher.ProcStarter procStarter = launcher.new ProcStarter();
-            procStarter = procStarter.cmds(args).stdout(outputStream);
 
-            if (workspace != null) {
-                procStarter = procStarter.pwd(workspace);
-            }
+            ProcStarter ps = launcher.decorateByEnv(envVars)
+                    .launch()
+                    .pwd(workspace)
+                    .cmds(args)
+                    .envs(envVars)
+                    .stdout(outputStream);
 
-            Proc proc = procStarter.start();
-            int exitCode = proc.join();
+            int exitCode = ps.join();
             String output = outputStream.toString(StandardCharsets.UTF_8).trim();
 
             return new CLIResult(exitCode, output, exitCode == 0, null);
 
         } catch (IOException e) {
+            LOGGER.severe("✗ Failed to execute CLI command: " + e.getMessage());
             return new CLIResult(-1, "", false, e.getMessage());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -47,16 +54,18 @@ public class TacotruckCLIHelper {
         }
     }
 
-    protected static boolean isTacotruckCliAvailable(Launcher launcher, TaskListener listener, FilePath workspace) {
-        CLIResult result = executeCLI(new String[] {"tacotruck", "--version"}, launcher, listener, workspace);
+    protected static boolean isTacotruckCliAvailable(
+            Launcher launcher, TaskListener listener, FilePath workspace, EnvVars envVars) {
+        CLIResult result = executeCLI(
+                new String[] {"npx", "@testfiesta/tacotruck", "--version"}, launcher, listener, workspace, envVars);
 
         if (result.isSuccess()) {
-            LOGGER.info("✓ TacoTruck CLI is available: " + result.getOutput());
+            LOGGER.info("✓ TacoTruck CLI is available via npx: " + result.getOutput());
             return true;
         } else {
             if (result.getErrorMessage() != null) {
-                LOGGER.info("✗ TacoTruck CLI not found: " + result.getErrorMessage());
-                LOGGER.info("Please ensure TacoTruck is installed via npm and available in PATH");
+                LOGGER.info("✗ TacoTruck CLI not found via npx: " + result.getErrorMessage());
+                LOGGER.info("Please ensure Node.js and npm are available in PATH");
             } else {
                 LOGGER.info("✗ TacoTruck CLI check failed with exit code: " + result.getExitCode());
             }
@@ -64,9 +73,26 @@ public class TacotruckCLIHelper {
         }
     }
 
-    protected static String getTacotruckCliVersion(Launcher launcher, TaskListener listener, FilePath workspace) {
-        CLIResult result = executeCLI(new String[] {"tacotruck", "--version"}, launcher, listener, workspace);
+    protected static boolean isTacotruckCliAvailable(Launcher launcher, TaskListener listener, FilePath workspace) {
+        return isTacotruckCliAvailable(launcher, listener, workspace, null);
+    }
+
+    protected static String findNpxPath(Launcher launcher, TaskListener listener, FilePath workspace, EnvVars envVars) {
+        CLIResult result = executeCLI(new String[] {"which", "npx"}, launcher, listener, workspace, envVars);
         return result.isSuccess() ? result.getOutput() : null;
+    }
+
+    protected static String getTacotruckCliVersion(
+            Launcher launcher, TaskListener listener, FilePath workspace, EnvVars envVars) {
+        String npxPath = findNpxPath(launcher, listener, workspace, envVars);
+        CLIResult result = executeCLI(
+                new String[] {npxPath, "@testfiesta/tacotruck", "--version"}, launcher, listener, workspace, envVars);
+
+        return result.isSuccess() ? result.getOutput() : null;
+    }
+
+    protected static String getTacotruckCliVersion(Launcher launcher, TaskListener listener, FilePath workspace) {
+        return getTacotruckCliVersion(launcher, listener, workspace, null);
     }
 
     protected static String[] buildSubmitCommand(
@@ -76,10 +102,11 @@ public class TacotruckCLIHelper {
             String apiToken,
             String handle,
             String runName,
-            String baseUrl) {
+            String baseUrl,
+            String npxPath) {
         List<String> cmd = new ArrayList<>();
 
-        cmd.add("npx");
+        cmd.add(npxPath);
         cmd.add("@testfiesta/tacotruck");
         cmd.add(provider);
         cmd.add("run:submit");
@@ -117,7 +144,9 @@ public class TacotruckCLIHelper {
 
         listener.getLogger().println("Submitting test results to TacoTruck...");
 
-        String[] command = buildSubmitCommand(provider, resultsPath, projectKey, apiToken, handle, runName, baseUrl);
+        String npxPath = findNpxPath(launcher, listener, workspace, null);
+        String[] command =
+                buildSubmitCommand(provider, resultsPath, projectKey, apiToken, handle, runName, baseUrl, npxPath);
 
         StringBuilder logCmd = new StringBuilder();
         for (int i = 0; i < command.length; i++) {
