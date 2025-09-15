@@ -120,13 +120,13 @@ public class TacotruckStep extends Step {
                     step.getApiUrl(),
                     launcher,
                     listener,
-                    workspace);
+                    workspace,
+                    envVars);
 
             if (!success) {
                 throw new RuntimeException("Failed to submit test results to TacoTruck");
             }
 
-            listener.getLogger().println("✓ Test results successfully submitted to TacoTruck");
             return null;
         }
     }
