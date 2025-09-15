@@ -1,9 +1,5 @@
 package io.jenkins.plugins.tacotruck;
 
-import hudson.model.FreeStyleBuild;
-import hudson.model.FreeStyleProject;
-import org.junit.jupiter.api.Test;
-import org.jvnet.hudson.test.JenkinsRule;
 import org.jvnet.hudson.test.junit.jupiter.WithJenkins;
 
 @WithJenkins

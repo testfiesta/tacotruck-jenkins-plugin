@@ -79,12 +79,12 @@ public class TacotruckBuilder extends Builder implements SimpleBuildStep {
     @Override
     public void perform(Run<?, ?> run, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener)
             throws InterruptedException, IOException {
-        String version = TacotruckCLIHelper.getTacotruckCliVersion(launcher, listener, workspace);
+        String version = TacotruckCLIHelper.getTacotruckCliVersion(launcher, listener, workspace, env);
         if (version == null) {
-            throw new InterruptedException(
-                    "Tacotruck CLI version not found. You can install it using npm install -g @testfiesta/tacotruck");
+            throw new InterruptedException("TacoTruck CLI is not available and could not be installed automatically. "
+                    + "Please ensure Node.js is available and npm has proper permissions for global installations.");
         }
-        listener.getLogger().println(version);
+        listener.getLogger().println("Using TacoTruck CLI version: " + version);
         listener.getLogger().println("Starting test result submission for run: " + this.getRunName());
 
         boolean success = TacotruckCLIHelper.submitResultsWithCredentials(

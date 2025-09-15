@@ -35,31 +35,34 @@ Currently, no global configuration is required for this plugin.
 
 #### Pipeline Jobs
 
-Use the `tacotruck` step in your Jenkinsfile:
+Use the `tacotruck` step in your Jenkinsfile with the nodejs buildwrapper:
 
 ```groovy
 pipeline {
     agent any
+    tools { nodejs 'Node 20.x' }
     stages {
-        stage('TacoTruck Integration') {
+        stage('Submit Test Results') {
             environment {
                 TESTFIESTA_CREDENTIALS_ID = credentials('YOUR_CREDENTIALS_ID')
             }
             steps {
-                tacotruck(
-                 provider: 'testfiesta',
-                 runName: 'My TacoTruck Run',
-                 apiUrl: 'https://staging.api.testfiesta.com',
-                 handle: 'TestHandle',
-                 project: 'testProjectKey',
-                 credentialsId: TESTFIESTA_CREDENTIALS_ID,
-                 resultsPath: './test-results.xml'
-                )
+                    tacotruck(
+                        provider: 'testfiesta',
+                        runName: 'My TacoTruck Run',
+                        apiUrl: 'https://staging.api.testfiesta.com',
+                        handle: 'TestHandle',
+                        project: 'testProjectKey',
+                        credentialsId: TESTFIESTA_CREDENTIALS_ID,
+                        resultsPath: './test-results.xml'
+                    )
             }
         }
     }
 }
 ```
+
+**Note**: The `tacotruck` step must be wrapped inside a `nodejs` buildwrapper block to ensure npm and npx are available in the PATH.
 
 ### Credentials Setup
 
