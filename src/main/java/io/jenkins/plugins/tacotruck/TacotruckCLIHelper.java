@@ -33,12 +33,14 @@ public class TacotruckCLIHelper {
 
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-            ProcStarter ps = launcher.decorateByEnv(envVars)
-                    .launch()
+            ProcStarter ps = launcher.launch()
                     .pwd(workspace)
                     .cmds(args)
-                    .envs(envVars)
                     .stdout(outputStream);
+            
+            if (envVars != null) {
+                ps = ps.envs(envVars);
+            }
 
             int exitCode = ps.join();
             String output = outputStream.toString(StandardCharsets.UTF_8).trim();
@@ -121,11 +123,8 @@ public class TacotruckCLIHelper {
         cmd.add(runName);
         cmd.add("--project-key");
         cmd.add(projectKey);
-
-        // Base URL is not yet supported by TacoTruck CLI
-        if (baseUrl != null && !baseUrl.trim().isEmpty()) {
-            LOGGER.info("Base URL provided but not yet supported by TacoTruck CLI: " + baseUrl);
-        }
+        cmd.add("--url");
+        cmd.add(baseUrl);
 
         return cmd.toArray(new String[0]);
     }
@@ -140,11 +139,12 @@ public class TacotruckCLIHelper {
             String baseUrl,
             Launcher launcher,
             TaskListener listener,
-            FilePath workspace) {
+            FilePath workspace,
+            EnvVars envVars) {
 
         listener.getLogger().println("Submitting test results to TacoTruck...");
 
-        String npxPath = findNpxPath(launcher, listener, workspace, null);
+        String npxPath = findNpxPath(launcher, listener, workspace, envVars);
         String[] command =
                 buildSubmitCommand(provider, resultsPath, projectKey, apiToken, handle, runName, baseUrl, npxPath);
 
@@ -161,7 +161,9 @@ public class TacotruckCLIHelper {
         }
         listener.getLogger().println("Executing: " + logCmd.toString());
 
-        CLIResult result = executeCLI(command, launcher, listener, workspace);
+        CLIResult result = executeCLI(command, launcher, listener, workspace, envVars);
+
+        listener.getLogger().println(result.getOutput());
 
         return result.isSuccess();
     }
@@ -190,7 +192,8 @@ public class TacotruckCLIHelper {
             String baseUrl,
             Launcher launcher,
             TaskListener listener,
-            FilePath workspace) {
+            FilePath workspace,
+            EnvVars envVars) {
 
         String apiToken = getApiToken(credentialsId);
         if (apiToken == null) {
@@ -199,6 +202,6 @@ public class TacotruckCLIHelper {
         }
 
         return submitResults(
-                provider, resultsPath, projectKey, apiToken, handle, runName, baseUrl, launcher, listener, workspace);
+                provider, resultsPath, projectKey, apiToken, handle, runName, baseUrl, launcher, listener, workspace, envVars);
     }
 }

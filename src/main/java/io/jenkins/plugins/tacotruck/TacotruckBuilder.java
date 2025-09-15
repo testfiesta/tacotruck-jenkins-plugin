@@ -85,7 +85,6 @@ public class TacotruckBuilder extends Builder implements SimpleBuildStep {
                     + "Please ensure Node.js is available and npm has proper permissions for global installations.");
         }
         listener.getLogger().println("Using TacoTruck CLI version: " + version);
-        listener.getLogger().println("Starting test result submission for run: " + this.getRunName());
 
         boolean success = TacotruckCLIHelper.submitResultsWithCredentials(
                 this.getProvider(),
@@ -97,7 +96,8 @@ public class TacotruckBuilder extends Builder implements SimpleBuildStep {
                 this.getApiUrl(),
                 launcher,
                 listener,
-                workspace);
+                workspace,
+                env);
 
         if (!success) {
             throw new IOException("Failed to submit test results to TacoTruck");
