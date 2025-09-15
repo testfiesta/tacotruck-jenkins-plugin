@@ -84,13 +84,6 @@ public class TacotruckCLIHelper {
 
     protected static String getTacotruckCliVersion(
             Launcher launcher, TaskListener listener, FilePath workspace, EnvVars envVars) {
-
-        CLIResult pwdResult = executeCLI(new String[] {"pwd"}, launcher, listener, workspace, envVars);
-        CLIResult npmWhichResult =
-                executeCLI(new String[] {"npm", "--version"}, launcher, listener, workspace, envVars);
-        listener.getLogger().printf("Current working directory: %s%n", pwdResult.getOutput());
-        listener.getLogger().printf("npm version: %s%n", npmWhichResult.getOutput());
-
         String npxPath = findNpxPath(launcher, listener, workspace, envVars);
         CLIResult result = executeCLI(
                 new String[] {npxPath, "@testfiesta/tacotruck", "--version"}, launcher, listener, workspace, envVars);
