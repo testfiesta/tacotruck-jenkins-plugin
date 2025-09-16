@@ -33,11 +33,8 @@ public class TacotruckCLIHelper {
 
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
-            ProcStarter ps = launcher.launch()
-                    .pwd(workspace)
-                    .cmds(args)
-                    .stdout(outputStream);
-            
+            ProcStarter ps = launcher.launch().pwd(workspace).cmds(args).stdout(outputStream);
+
             if (envVars != null) {
                 ps = ps.envs(envVars);
             }
@@ -202,6 +199,16 @@ public class TacotruckCLIHelper {
         }
 
         return submitResults(
-                provider, resultsPath, projectKey, apiToken, handle, runName, baseUrl, launcher, listener, workspace, envVars);
+                provider,
+                resultsPath,
+                projectKey,
+                apiToken,
+                handle,
+                runName,
+                baseUrl,
+                launcher,
+                listener,
+                workspace,
+                envVars);
     }
 }

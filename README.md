@@ -28,10 +28,13 @@ Currently, no global configuration is required for this plugin.
 
 1. Add a build step "TacoTruck Integration"
 2. Configure the following parameters:
+   - **Provider**: Select the provider from the dropdown (currently supported: `testfiesta`)
    - **Run Name**: A descriptive name for this integration step
    - **API URL**: The TacoTruck service endpoint URL
    - **Project**: (Optional) Project identifier
    - **Credentials**: Select appropriate credentials from the dropdown
+   - **Results Path**: Path to the test results file
+   - **Handle**: username or organization handle
 
 #### Pipeline Jobs
 
@@ -43,9 +46,6 @@ pipeline {
     tools { nodejs 'Node 20.x' }
     stages {
         stage('Submit Test Results') {
-            environment {
-                TESTFIESTA_CREDENTIALS_ID = credentials('YOUR_CREDENTIALS_ID')
-            }
             steps {
                     tacotruck(
                         provider: 'testfiesta',
@@ -53,7 +53,7 @@ pipeline {
                         apiUrl: 'https://staging.api.testfiesta.com',
                         handle: 'TestHandle',
                         project: 'testProjectKey',
-                        credentialsId: TESTFIESTA_CREDENTIALS_ID,
+                        credentialsId: 'YOUR_CREDENTIALS_ID',
                         resultsPath: './test-results.xml'
                     )
             }
