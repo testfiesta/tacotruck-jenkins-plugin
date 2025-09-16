@@ -2,3 +2,9 @@
 ---
 _extends: .github
 tag-template: tacotruck-jenkins-plugin-$NEXT_MINOR_VERSION
+name-template: $NEXT_PATCH_VERSION
+version-template: $MAJOR.$MINOR.$PATCH
+template: |
+  ## Changes
+
+  $CHANGES
