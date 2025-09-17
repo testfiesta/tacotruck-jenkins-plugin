@@ -35,6 +35,11 @@ public class CredentialsHelper {
 
     @CheckForNull
     protected static StringCredentials lookupApiTokenCredentials(@CheckForNull String credentialsId) {
+        if (credentialsId == null) {
+            LOGGER.info("Looking up API token credentials with null ID");
+            return null;
+        }
+
         LOGGER.info("Looking up API token credentials with ID: " + credentialsId);
         return CredentialsMatchers.firstOrNull(
                 CredentialsProvider.lookupCredentials(StringCredentials.class, Jenkins.get(), ACL.SYSTEM),
