@@ -20,6 +20,7 @@ import org.jenkinsci.Symbol;
 import org.kohsuke.stapler.AncestorInPath;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
+import org.kohsuke.stapler.verb.POST;
 
 public class TacotruckBuilder extends Builder implements SimpleBuildStep {
 
@@ -80,31 +81,34 @@ public class TacotruckBuilder extends Builder implements SimpleBuildStep {
     @Override
     public void perform(Run<?, ?> run, FilePath workspace, EnvVars env, Launcher launcher, TaskListener listener)
             throws InterruptedException, IOException {
-        String version = TacotruckCLIHelper.getTacotruckCliVersion(launcher, listener, workspace, env);
-        if (version == null) {
+
+        try {
+            String version = TacotruckCLIHelper.getTacotruckCliVersion(launcher, listener, workspace, env);
+            listener.getLogger().println("Using TacoTruck CLI version: " + version);
+        } catch (Exception e) {
             throw new AbortException("TacoTruck CLI is not available and could not be installed automatically. "
                     + "Please ensure Node.js is available and npm has proper permissions for global installations.");
         }
-        listener.getLogger().println("Using TacoTruck CLI version: " + version);
+        try {
+            CLIResult result = TacotruckCLIHelper.submitResultsWithCredentials(
+                    this.getProvider(),
+                    this.getResultsPath(),
+                    this.getProject(),
+                    this.getCredentialsId(),
+                    this.getHandle(),
+                    this.getRunName(),
+                    this.getApiUrl(),
+                    launcher,
+                    listener,
+                    workspace,
+                    env);
 
-        boolean success = TacotruckCLIHelper.submitResultsWithCredentials(
-                this.getProvider(),
-                this.getResultsPath(),
-                this.getProject(),
-                this.getCredentialsId(),
-                this.getHandle(),
-                this.getRunName(),
-                this.getApiUrl(),
-                launcher,
-                listener,
-                workspace,
-                env);
-
-        if (!success) {
-            throw new AbortException("Failed to submit test results to TacoTruck");
+            if (!result.isSuccess()) {
+                throw new AbortException("Failed to submit test results");
+            }
+        } catch (Exception e) {
+            throw e;
         }
-
-        listener.getLogger().println("✓ Test results successfully submitted to TacoTruck");
     }
 
     @Symbol("tacotruck")
@@ -166,6 +170,7 @@ public class TacotruckBuilder extends Builder implements SimpleBuildStep {
             return FormValidation.ok();
         }
 
+        @POST
         public ListBoxModel doFillCredentialsIdItems(
                 @AncestorInPath final Item item, @QueryParameter final String credentialsId) {
             if (item == null || !item.hasPermission(Item.CONFIGURE)) {
