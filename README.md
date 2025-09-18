@@ -12,7 +12,7 @@ A Jenkins plugin that provides build step integration with TacoTruck
 
 ### Manual Installation
 
-1. Download the latest `.hpi` file from the [releases page](https://github.com/testfiesta/tacotruck-jenkins-plugin/releases)
+1. Download the latest `.hpi` file from the [releases page](https://github.com/jenkinsci/tacotruck-plugin/releases)
 2. Go to **Manage Jenkins** → **Manage Plugins** → **Advanced**
 3. Upload the `.hpi` file and restart Jenkins
 
@@ -76,7 +76,7 @@ This plugin supports both username/password and API token credentials:
 ## Requirements
 
 - Jenkins 2.479.3 or later
-- Java 11 or later
+- Java 17 or later
 
 ## Development
 
@@ -103,7 +103,7 @@ This will start a Jenkins instance with the plugin loaded at `http://localhost:8
 
 ## Issues and Support
 
-Report issues and feature requests on [GitHub Issues](https://github.com/testfiesta/tacotruck-jenkins-plugin/issues).
+Report issues and feature requests on [GitHub Issues](https://github.com/jenkinsci/tacotruck-plugin/issues).
 
 ### Development Setup
 

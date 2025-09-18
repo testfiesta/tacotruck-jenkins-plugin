@@ -1,5 +1,6 @@
 package io.jenkins.plugins.tacotruck;
 
+import hudson.AbortException;
 import hudson.EnvVars;
 import hudson.Extension;
 import hudson.FilePath;
@@ -81,7 +82,7 @@ public class TacotruckBuilder extends Builder implements SimpleBuildStep {
             throws InterruptedException, IOException {
         String version = TacotruckCLIHelper.getTacotruckCliVersion(launcher, listener, workspace, env);
         if (version == null) {
-            throw new InterruptedException("TacoTruck CLI is not available and could not be installed automatically. "
+            throw new AbortException("TacoTruck CLI is not available and could not be installed automatically. "
                     + "Please ensure Node.js is available and npm has proper permissions for global installations.");
         }
         listener.getLogger().println("Using TacoTruck CLI version: " + version);
@@ -100,7 +101,7 @@ public class TacotruckBuilder extends Builder implements SimpleBuildStep {
                 env);
 
         if (!success) {
-            throw new IOException("Failed to submit test results to TacoTruck");
+            throw new AbortException("Failed to submit test results to TacoTruck");
         }
 
         listener.getLogger().println("✓ Test results successfully submitted to TacoTruck");
@@ -111,7 +112,7 @@ public class TacotruckBuilder extends Builder implements SimpleBuildStep {
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
         public FormValidation doCheckRunName(@QueryParameter String value) throws IOException, ServletException {
-            if (value == null || value.trim().isEmpty()) {
+            if (value == null || value.isBlank()) {
                 return FormValidation.error("Run name is required");
             }
             if (value.trim().length() < 3) {
@@ -121,7 +122,7 @@ public class TacotruckBuilder extends Builder implements SimpleBuildStep {
         }
 
         public FormValidation doCheckApiUrl(@QueryParameter String value) throws IOException, ServletException {
-            if (value == null || value.trim().isEmpty()) {
+            if (value == null || value.isBlank()) {
                 return FormValidation.error("API URL is required");
             }
             if (!value.startsWith("http://") && !value.startsWith("https://")) {
@@ -131,35 +132,35 @@ public class TacotruckBuilder extends Builder implements SimpleBuildStep {
         }
 
         public FormValidation doCheckProvider(@QueryParameter String value) {
-            if (value == null || value.trim().isEmpty()) {
+            if (value == null || value.isBlank()) {
                 return FormValidation.error("Provider is required");
             }
             return FormValidation.ok();
         }
 
         public FormValidation doCheckHandle(@QueryParameter String value) {
-            if (value == null || value.trim().isEmpty()) {
+            if (value == null || value.isBlank()) {
                 return FormValidation.error("Organization handle is required");
             }
             return FormValidation.ok();
         }
 
         public FormValidation doCheckProject(@QueryParameter String value) {
-            if (value == null || value.trim().isEmpty()) {
+            if (value == null || value.isBlank()) {
                 return FormValidation.error("Project is required");
             }
             return FormValidation.ok();
         }
 
         public FormValidation doCheckResultsPath(@QueryParameter String value) {
-            if (value == null || value.trim().isEmpty()) {
+            if (value == null || value.isBlank()) {
                 return FormValidation.error("Results path is required");
             }
             return FormValidation.ok();
         }
 
         public FormValidation doCheckCredentialsId(@QueryParameter String value) {
-            if (value == null || value.trim().isEmpty()) {
+            if (value == null || value.isBlank()) {
                 return FormValidation.error("Credentials are required - please select valid credentials");
             }
             return FormValidation.ok();
@@ -167,6 +168,9 @@ public class TacotruckBuilder extends Builder implements SimpleBuildStep {
 
         public ListBoxModel doFillCredentialsIdItems(
                 @AncestorInPath final Item item, @QueryParameter final String credentialsId) {
+            if (item == null || !item.hasPermission(Item.CONFIGURE)) {
+                return null;
+            }
             return CredentialsHelper.doFillCredentialsIdItems(item, credentialsId);
         }
 
@@ -177,7 +181,7 @@ public class TacotruckBuilder extends Builder implements SimpleBuildStep {
 
         @Override
         public String getDisplayName() {
-            return Messages.TacotruckBuilder_DescriptorImpl_DisplayName();
+            return "Submit test results";
         }
     }
 }

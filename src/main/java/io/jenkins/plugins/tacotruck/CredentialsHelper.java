@@ -4,7 +4,6 @@ import com.cloudbees.plugins.credentials.CredentialsMatchers;
 import com.cloudbees.plugins.credentials.CredentialsProvider;
 import com.cloudbees.plugins.credentials.common.StandardCredentials;
 import com.cloudbees.plugins.credentials.common.StandardListBoxModel;
-import com.cloudbees.plugins.credentials.common.StandardUsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.common.UsernamePasswordCredentials;
 import com.cloudbees.plugins.credentials.domains.DomainRequirement;
 import edu.umd.cs.findbugs.annotations.CheckForNull;
@@ -20,27 +19,11 @@ public class CredentialsHelper {
     private static final Logger LOGGER = Logger.getLogger(CredentialsHelper.class.getName());
 
     @CheckForNull
-    protected static StandardUsernamePasswordCredentials lookupUsernameAndPasswordCredentials(
-            @CheckForNull String credentialsId) {
-
-        if (credentialsId == null) {
-            return null;
-        }
-
-        return CredentialsMatchers.firstOrNull(
-                CredentialsProvider.lookupCredentials(
-                        StandardUsernamePasswordCredentials.class, Jenkins.get(), ACL.SYSTEM),
-                CredentialsMatchers.withId(credentialsId));
-    }
-
-    @CheckForNull
     protected static StringCredentials lookupApiTokenCredentials(@CheckForNull String credentialsId) {
         if (credentialsId == null) {
-            LOGGER.info("Looking up API token credentials with null ID");
             return null;
         }
 
-        LOGGER.info("Looking up API token credentials with ID: " + credentialsId);
         return CredentialsMatchers.firstOrNull(
                 CredentialsProvider.lookupCredentials(StringCredentials.class, Jenkins.get(), ACL.SYSTEM),
                 CredentialsMatchers.withId(credentialsId));
@@ -49,7 +32,7 @@ public class CredentialsHelper {
     protected static ListBoxModel doFillCredentialsIdItems(Item item, String credentialsId) {
         StandardListBoxModel result = new StandardListBoxModel();
 
-        if (!Jenkins.get().hasPermission(Jenkins.ADMINISTER)) {
+        if (item == null || !item.hasPermission(Item.CONFIGURE)) {
             return result.includeCurrentValue(credentialsId);
         }
 
