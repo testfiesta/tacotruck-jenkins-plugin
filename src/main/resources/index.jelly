@@ -1,4 +1,4 @@
 <?jelly escape-by-default='true'?>
 <div>
-    TODO
+    Integrates Jenkins with TacoTruck that provides test management platforms (TestFiesta, TestRail) to automatically submit test results and track test execution metrics.
 </div>
