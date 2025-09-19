@@ -183,7 +183,7 @@ public class TacotruckBuilder extends Builder implements SimpleBuildStep {
 
         @Override
         public String getDisplayName() {
-            return "Submit test results";
+            return "Execute Tacotruck";
         }
     }
 }
