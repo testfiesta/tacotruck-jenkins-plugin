@@ -173,9 +173,6 @@ public class TacotruckBuilder extends Builder implements SimpleBuildStep {
         @POST
         public ListBoxModel doFillCredentialsIdItems(
                 @AncestorInPath final Item item, @QueryParameter final String credentialsId) {
-            if (item == null || !item.hasPermission(Item.CONFIGURE)) {
-                return null;
-            }
             return CredentialsHelper.doFillCredentialsIdItems(item, credentialsId);
         }
 
