@@ -119,7 +119,7 @@ public class TacotruckCLIHelper {
     protected static String[] buildSubmitCommand(
             String provider,
             String resultsPath,
-            String projectKey,
+            String project,
             String apiToken,
             String handle,
             String runName,
@@ -140,8 +140,8 @@ public class TacotruckCLIHelper {
         cmd.add(handle);
         cmd.add("--name");
         cmd.add(runName);
-        cmd.add("--project-key");
-        cmd.add(projectKey);
+        cmd.add("--project");
+        cmd.add(project);
         cmd.add("--url");
         cmd.add(baseUrl);
 
@@ -151,7 +151,7 @@ public class TacotruckCLIHelper {
     protected static CLIResult submitResults(
             String provider,
             String resultsPath,
-            String projectKey,
+            String project,
             String apiToken,
             String handle,
             String runName,
@@ -166,7 +166,7 @@ public class TacotruckCLIHelper {
 
         String npxPath = findNpxPath(launcher, listener, workspace, envVars);
         String[] command =
-                buildSubmitCommand(provider, resultsPath, projectKey, apiToken, handle, runName, baseUrl, npxPath);
+                buildSubmitCommand(provider, resultsPath, project, apiToken, handle, runName, baseUrl, npxPath);
 
         StringBuilder logCmd = new StringBuilder();
         for (int i = 0; i < command.length; i++) {
@@ -204,7 +204,7 @@ public class TacotruckCLIHelper {
     protected static CLIResult submitResultsWithCredentials(
             String provider,
             String resultsPath,
-            String projectKey,
+            String project,
             String credentialsId,
             String handle,
             String runName,
@@ -223,7 +223,7 @@ public class TacotruckCLIHelper {
         return submitResults(
                 provider,
                 resultsPath,
-                projectKey,
+                project,
                 apiToken,
                 handle,
                 runName,
