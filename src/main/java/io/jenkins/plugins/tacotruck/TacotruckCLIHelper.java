@@ -1,5 +1,6 @@
 package io.jenkins.plugins.tacotruck;
 
+import hudson.AbortException;
 import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.Launcher;
@@ -49,12 +50,10 @@ public class TacotruckCLIHelper {
         } catch (InterruptedException e) {
             String errorMsg = "✗ Failed to execute CLI command: " + e.getMessage();
             listener.getLogger().println(errorMsg);
-            LOGGER.severe(errorMsg);
             throw e;
         } catch (IOException e) {
             String errorMsg = "✗ Failed to execute CLI command: " + e.getMessage();
             listener.getLogger().println(errorMsg);
-            LOGGER.severe(errorMsg);
             throw e;
         }
     }
@@ -217,7 +216,9 @@ public class TacotruckCLIHelper {
 
         String apiToken = getApiToken(credentialsId);
         if (apiToken == null) {
-            LOGGER.severe("✗ Failed to retrieve API token from credentials: " + credentialsId);
+            String errorMsg = "✗ Failed to retrieve API token from credentials: " + credentialsId;
+            listener.getLogger().println(errorMsg);
+            throw new AbortException(errorMsg);
         }
 
         return submitResults(
