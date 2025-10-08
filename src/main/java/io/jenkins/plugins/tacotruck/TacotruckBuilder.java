@@ -115,7 +115,12 @@ public class TacotruckBuilder extends Builder implements SimpleBuildStep {
     @Extension
     public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
-        public FormValidation doCheckRunName(@QueryParameter String value) throws IOException, ServletException {
+        @POST
+        public FormValidation doCheckRunName(@AncestorInPath Item item, @QueryParameter String value)
+                throws IOException, ServletException {
+            if (item == null || !item.hasPermission(Item.CONFIGURE)) {
+                return FormValidation.ok();
+            }
             if (value == null || value.isBlank()) {
                 return FormValidation.error("Run name is required");
             }
@@ -125,7 +130,12 @@ public class TacotruckBuilder extends Builder implements SimpleBuildStep {
             return FormValidation.ok();
         }
 
-        public FormValidation doCheckApiUrl(@QueryParameter String value) throws IOException, ServletException {
+        @POST
+        public FormValidation doCheckApiUrl(@AncestorInPath Item item, @QueryParameter String value)
+                throws IOException, ServletException {
+            if (item == null || !item.hasPermission(Item.CONFIGURE)) {
+                return FormValidation.ok();
+            }
             if (value == null || value.isBlank()) {
                 return FormValidation.error("API URL is required");
             }
@@ -135,35 +145,55 @@ public class TacotruckBuilder extends Builder implements SimpleBuildStep {
             return FormValidation.ok();
         }
 
-        public FormValidation doCheckProvider(@QueryParameter String value) {
+        @POST
+        public FormValidation doCheckProvider(@AncestorInPath Item item, @QueryParameter String value) {
+            if (item == null || !item.hasPermission(Item.CONFIGURE)) {
+                return FormValidation.ok();
+            }
             if (value == null || value.isBlank()) {
                 return FormValidation.error("Provider is required");
             }
             return FormValidation.ok();
         }
 
-        public FormValidation doCheckHandle(@QueryParameter String value) {
+        @POST
+        public FormValidation doCheckHandle(@AncestorInPath Item item, @QueryParameter String value) {
+            if (item == null || !item.hasPermission(Item.CONFIGURE)) {
+                return FormValidation.ok();
+            }
             if (value == null || value.isBlank()) {
                 return FormValidation.error("Organization handle is required");
             }
             return FormValidation.ok();
         }
 
-        public FormValidation doCheckProject(@QueryParameter String value) {
+        @POST
+        public FormValidation doCheckProject(@AncestorInPath Item item, @QueryParameter String value) {
+            if (item == null || !item.hasPermission(Item.CONFIGURE)) {
+                return FormValidation.ok();
+            }
             if (value == null || value.isBlank()) {
                 return FormValidation.error("Project is required");
             }
             return FormValidation.ok();
         }
 
-        public FormValidation doCheckResultsPath(@QueryParameter String value) {
+        @POST
+        public FormValidation doCheckResultsPath(@AncestorInPath Item item, @QueryParameter String value) {
+            if (item == null || !item.hasPermission(Item.CONFIGURE)) {
+                return FormValidation.ok();
+            }
             if (value == null || value.isBlank()) {
                 return FormValidation.error("Results path is required");
             }
             return FormValidation.ok();
         }
 
-        public FormValidation doCheckCredentialsId(@QueryParameter String value) {
+        @POST
+        public FormValidation doCheckCredentialsId(@AncestorInPath Item item, @QueryParameter String value) {
+            if (item == null || !item.hasPermission(Item.CONFIGURE)) {
+                return FormValidation.ok();
+            }
             if (value == null || value.isBlank()) {
                 return FormValidation.error("Credentials are required - please select valid credentials");
             }
